@@ -73,8 +73,8 @@ class ImageFileUploadWidget(FileUploadWidget):
                 self.file_list.addItem(f)
 
     def api_test(self, item):
+        pass
         
-
 
 class VideoFileUploadWidget(FileUploadWidget):
     def __init__(self):
@@ -96,20 +96,19 @@ class DragAndDrop(QLabel):  # 가상 os라 안되는 거 같음. 로컬에서 �
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setAcceptDrops(True)
+        self.file_list = list()
 
     def dragEnterEvent(self, event):
-        if event.mimedata().hasUrls():
-            print("뭐임")
+        if event.mimeData().hasUrls():
             event.accept()
         
         else:
-            print("tlqkf")
             event.ignore()
 
     def dropEvent(self, event):
-        files = [url.toLocalFile() for url in event.mimedata().urls()]
+        files = [url.toLocalFile() for url in event.mimeData().urls()]
         for f in files:
-            print(f)
+            self.file_list.append(f)
 
     # def resizeEvent(self, event):
     #     self.label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
