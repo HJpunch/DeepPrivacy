@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "deepprivacygui"
+version = "0.1.0"
+description = "DeepPrivacy front end with PyQT"
+authors = ["Kim Hyung Jung"]
+license = "AIDEEP"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pyqt6 = "^6.5.1"
+requests = "^2.31.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
