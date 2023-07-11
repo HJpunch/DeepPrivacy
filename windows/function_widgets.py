@@ -1,18 +1,17 @@
-from PyQt6 import QtGui
 from PyQt6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout, QBoxLayout, \
     QLabel, QPushButton, QComboBox, QFileDialog, QListWidget
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
 
-# from main_window import ICONS_DIR
-from basic_window import ASSET
-
-ICONS_DIR = ASSET + "/icons/"
+from windows.basic_window import ICONS_DIR
+from utils.HTTP_request import read_file, post_file
 
 
 class FileUploadWidget(QGroupBox):
     def __init__(self):
         super().__init__()
+        self.threshold = 0.5
+
         self.setTitle("Upload File")
         self.box = QVBoxLayout()
         self.setLayout(self.box)
@@ -31,7 +30,6 @@ class FileUploadWidget(QGroupBox):
         label.setPixmap(pixmap)
         self.upload_box.addWidget(label)
 
-        # label = QLabel("Drag and Drop Files Here")
         label = DragAndDrop("Drag and Drop Files Here")
         font = label.font()
         font.setBold(True)
@@ -47,13 +45,18 @@ class FileUploadWidget(QGroupBox):
         self.file_list = QListWidget()
         self.file_list.setVisible(False)
         self.box.addWidget(self.file_list)
-        self.file_list.itemChanged.connect(self.api_test)
+        self.file_list.model().rowsInserted.connect(lambda: self.request(self.threshold))
 
     def dialog_open(self):
         pass
 
-    def api_test(self, item):
-        pass
+    def request(self, threshold=0.5):
+        filenames = [self.file_list.item(x).text() for x in range(self.file_list.count())]
+        upload = read_file(filenames)
+        data = {"threshold": threshold}
+        print(upload)
+        result = post_file(url='http://192.168.1.230:4000/upload', files=upload, data=data)
+        print(result.text)
 
 
 class ImageFileUploadWidget(FileUploadWidget):
@@ -72,9 +75,23 @@ class ImageFileUploadWidget(FileUploadWidget):
             for f in filenames:
                 self.file_list.addItem(f)
 
-    def api_test(self, item):
-        pass
-        
+            # 서버로 전송
+            # for f in [self.file_list.item(x) for x in range(self.file_list.count())]:
+            #     upload = read_file(f.text())
+            #     result = post_file(url='http://192.168.1.230:4000/upload', files=upload)
+            #     print(result)
+            # upload = read_file(filenames)
+            # print(upload)
+            # result = post_file(url='http://192.168.1.230:4000/upload', files=upload)
+            # print(result.text)
+
+    # def request(self, threshold=None):
+    #     filenames = [self.file_list.item(x).text() for x in range(self.file_list.count())]
+    #     upload = read_file(filenames)
+    #     print(upload)
+    #     result = post_file(url='http://192.168.1.230:4000/upload', files=upload)
+    #     print(result.text)
+
 
 class VideoFileUploadWidget(FileUploadWidget):
     def __init__(self):
@@ -119,6 +136,7 @@ class DragAndDrop(QLabel):  # 가상 os라 안되는 거 같음. 로컬에서 �
 class DefaultWidget(QWidget):
     def __init__(self):
         super().__init__()
+        self.threshold = 0.5
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -132,26 +150,24 @@ class DefaultWidget(QWidget):
 class DetectionWidget(DefaultWidget):
     def __init__(self):
         super().__init__()
-        self.threshold = 0.5
-
         # label = QLabel("개인정보 탐지 강도 선택")
         # self.layout.addWidget(QLabel("Select Privacy Detection Strength"))
 
-        self.threshold = QGroupBox()
-        self.layout.addWidget(self.threshold)
-        self.threshold.setTitle("Select Privacy Detection Strength")
-        self.threshold.setLayout(QVBoxLayout())
+        self.threshold_group = QGroupBox()
+        self.layout.addWidget(self.threshold_group)
+        self.threshold_group.setTitle("Select Privacy Detection Strength")
+        self.threshold_group.setLayout(QVBoxLayout())
 
         # combobox for threshold selection
         self.threshold_combobox = QComboBox()
         self.threshold_combobox.setMaximumWidth(400)
-        # self.threshold_combobox.addItems(["둔감", "보통", "민감"])
+        # self.threshold_group_combobox.addItems(["둔감", "보통", "민감"])
         self.threshold_combobox.addItems(["Insensitive", "Normal", "Sensitive"])
         self.threshold_combobox.setCurrentIndex(1)
         self.threshold_combobox.currentIndexChanged.connect(self.index_changed)
 
-        # self.layout.addWidget(self.threshold_combobox)
-        self.threshold.layout().addWidget(self.threshold_combobox)
+        # self.layout.addWidget(self.threshold_group_combobox)
+        self.threshold_group.layout().addWidget(self.threshold_combobox)
 
     def index_changed(self, index):
         threshold = [0.2, 0.5, 0.8]
@@ -183,7 +199,7 @@ if __name__ == "__main__":
     import sys
     from PyQt6.QtWidgets import QApplication
     app = QApplication(sys.argv)
-    window = VideoRecognitionWidget()
+    window = ImageFileUploadWidget()
     window.show()
 
     exit(app.exec())

@@ -6,13 +6,11 @@
 
 from PyQt6.QtWidgets import QToolBar, QStackedWidget
 from PyQt6.QtGui import QIcon, QAction, QActionGroup
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QCoreApplication
 
-from basic_window import BasicWindow, ASSET
-from function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget
+from windows.basic_window import BasicWindow, ICONS_DIR
+from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget
 
-
-ICONS_DIR = ASSET + "/icons/"
 
 def newIcon(icon:str) -> QIcon:
     return QIcon(ICONS_DIR + icon)
@@ -31,6 +29,9 @@ class MainWindow(BasicWindow):
         self.video_recognition = self.action(name="Video\nRecognition", icon="video_detection.svg")
         self.video_recognition.setCheckable(True)
 
+        app_quit = self.action("Quit", icon="quit.svg", shortcut="Ctrl+q", tip="Quit Application")
+        app_quit.triggered.connect(QCoreApplication.instance().quit)
+
         # create toolbar
         toolbar = QToolBar("Tool Bar")
         toolbar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
@@ -39,6 +40,7 @@ class MainWindow(BasicWindow):
         toolbar.addAction(self.image_detection)
         toolbar.addAction(self.video_detection)
         toolbar.addAction(self.video_recognition)
+        toolbar.addAction(app_quit)
 
         # define action group
         self.action_group = QActionGroup(toolbar)
@@ -47,6 +49,7 @@ class MainWindow(BasicWindow):
         self.action_group.addAction(self.video_recognition)
         self.action_group.setExclusive(True)
         self.action_group.triggered.connect(self.change_mode)
+        self.image_detection.setChecked(True)
 
         # add widgets
         self.stacked_widget = QStackedWidget(self)

@@ -6,8 +6,9 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QLayout
 from PyQt6.QtGui import QPixmap
 
-# ASSET = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-ASSET = os.path.abspath(os.path.pardir) + "/asset"
+ASSET = os.path.dirname(os.path.abspath(os.path.dirname(__file__))) + "/asset"
+# ASSET = os.path.abspath(os.path.pardir) + "/asset"
+ICONS_DIR = ASSET + "/icons/"
 
 
 class BasicWindow(QMainWindow):
