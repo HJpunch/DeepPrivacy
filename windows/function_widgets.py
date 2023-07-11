@@ -1,16 +1,20 @@
 from PyQt6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout, QBoxLayout, \
     QLabel, QPushButton, QComboBox, QFileDialog, QListWidget
 from PyQt6.QtGui import QPixmap
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
+from typing import Literal
 
 from windows.basic_window import ICONS_DIR
 from utils.HTTP_request import read_file, post_file
 
 
 class FileUploadWidget(QGroupBox):
-    def __init__(self):
+    resultSignal = pyqtSignal(list)
+    def __init__(self, file_type:Literal['image', 'video']):
         super().__init__()
+        self.file_type = file_type
         self.threshold = 0.5
+        self.url = str()
 
         self.setTitle("Upload File")
         self.box = QVBoxLayout()
@@ -45,23 +49,43 @@ class FileUploadWidget(QGroupBox):
         self.file_list = QListWidget()
         self.file_list.setVisible(False)
         self.box.addWidget(self.file_list)
-        self.file_list.model().rowsInserted.connect(lambda: self.request(self.threshold))
+        # self.file_list.model().rowsInserted.connect(self.request)
+
+    def set_url(self, url):
+        self.url = url
 
     def dialog_open(self):
-        pass
+        if self.file_type == "image":
+            filter = "Image(*.png *.jpg)"
+            file_dialog = QFileDialog.getOpenFileNames
+            caption = "Select one or more images to upload"
+        elif self.file_type == "video":
+            filter = "Video(*.mp4)"
+            file_dialog = QFileDialog.getOpenFileName
+            caption = "Select video to upload"
 
-    def request(self, threshold=0.5):
-        filenames = [self.file_list.item(x).text() for x in range(self.file_list.count())]
-        upload = read_file(filenames)
-        data = {"threshold": threshold}
-        print(upload)
-        result = post_file(url='http://192.168.1.230:4000/upload', files=upload, data=data)
-        print(result.text)
+        filenames, _ = file_dialog(\
+                parent=self, caption=caption, directory=".",\
+                filter=filter)
+        
+        if filenames:
+            self.file_list.setVisible(True)
+            self.file_list.clear()
+            if isinstance(filenames, list):
+                for f in filenames:
+                    self.file_list.addItem(f)
+            else:
+                self.file_list.addItem(f)
+
+            upload = read_file(filenames)
+            data = {"threshold": self.threshold}
+            result = post_file(url=self.url, files=upload, data=data)
+            self.resultSignal.emit(result)
 
 
 class ImageFileUploadWidget(FileUploadWidget):
     def __init__(self):
-        super().__init__()
+        super().__init__(file_type="image")
         self.setTitle("Upload Image(s)")
 
     def dialog_open(self):
@@ -75,27 +99,10 @@ class ImageFileUploadWidget(FileUploadWidget):
             for f in filenames:
                 self.file_list.addItem(f)
 
-            # 서버로 전송
-            # for f in [self.file_list.item(x) for x in range(self.file_list.count())]:
-            #     upload = read_file(f.text())
-            #     result = post_file(url='http://192.168.1.230:4000/upload', files=upload)
-            #     print(result)
-            # upload = read_file(filenames)
-            # print(upload)
-            # result = post_file(url='http://192.168.1.230:4000/upload', files=upload)
-            # print(result.text)
-
-    # def request(self, threshold=None):
-    #     filenames = [self.file_list.item(x).text() for x in range(self.file_list.count())]
-    #     upload = read_file(filenames)
-    #     print(upload)
-    #     result = post_file(url='http://192.168.1.230:4000/upload', files=upload)
-    #     print(result.text)
-
 
 class VideoFileUploadWidget(FileUploadWidget):
     def __init__(self):
-        super().__init__()
+        super().__init__(file_type="video")
         self.setTitle("Upload Video")
 
     def dialog_open(self):
@@ -150,8 +157,6 @@ class DefaultWidget(QWidget):
 class DetectionWidget(DefaultWidget):
     def __init__(self):
         super().__init__()
-        # label = QLabel("개인정보 탐지 강도 선택")
-        # self.layout.addWidget(QLabel("Select Privacy Detection Strength"))
 
         self.threshold_group = QGroupBox()
         self.layout.addWidget(self.threshold_group)
@@ -171,27 +176,53 @@ class DetectionWidget(DefaultWidget):
 
     def index_changed(self, index):
         threshold = [0.2, 0.5, 0.8]
-        self.threshold = threshold[index]
+        return threshold[index]
 
 
 class ImageDetectionWidget(DetectionWidget):
     def __init__(self):
         super().__init__()
-        self.upload_widget = ImageFileUploadWidget()
+        # self.upload_widget = ImageFileUploadWidget()
+        self.upload_widget = FileUploadWidget(file_type="image")
         self.layout.addWidget(self.upload_widget)
+
+        self.upload_widget.set_url('http://192.168.1.230:4000/upload')
+        self.upload_widget.resultSignal.connect(self.show_result)
+
+        self.result_test = QLabel()
+        self.layout.addWidget(self.result_test)
+
+    def index_changed(self, index):
+        threshold = super().index_changed(index)
+        self.upload_widget.threshold = threshold
+
+    def show_result(self, result):
+        pixmap = QPixmap.fromImage(result)
+        self.result_test.setPixmap(pixmap)
 
 
 class VideoDetectionWidget(DetectionWidget):
     def __init__(self):
         super().__init__()
-        self.upload_widget = VideoFileUploadWidget()
+        # self.upload_widget = VideoFileUploadWidget()
+        self.upload_widget = FileUploadWidget(file_type="video")
         self.layout.addWidget(self.upload_widget)
+
+        self.upload_widget.resultSignal.connect(self.show_result)
+
+    def index_changed(self, index):
+        threshold = super().index_changed(index)
+        self.upload_widget.threshold = threshold
+
+    def show_result(self, result):
+        pass
 
 
 class VideoRecognitionWidget(DefaultWidget):
     def __init__(self):
         super().__init__()
-        self.upload_widget = ImageFileUploadWidget()
+        # self.upload_widget = ImageFileUploadWidget()
+        self.upload_widget = FileUploadWidget("image")
         self.layout.addWidget(self.upload_widget)
 
 
@@ -199,7 +230,7 @@ if __name__ == "__main__":
     import sys
     from PyQt6.QtWidgets import QApplication
     app = QApplication(sys.argv)
-    window = ImageFileUploadWidget()
+    window = ImageDetectionWidget()
     window.show()
 
     exit(app.exec())
