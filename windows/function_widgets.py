@@ -1,15 +1,19 @@
-from PyQt6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout, QBoxLayout, \
-    QLabel, QPushButton, QComboBox, QFileDialog, QListWidget
+import io
+
+from PyQt6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout, \
+    QLabel, QPushButton, QComboBox, QFileDialog, QListWidget, QScrollArea
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 from typing import Literal
+from PIL import Image
+from PIL.ImageQt import ImageQt
 
 from windows.basic_window import ICONS_DIR
 from utils.HTTP_request import read_file, post_file
 
 
 class FileUploadWidget(QGroupBox):
-    resultSignal = pyqtSignal(list)
+    resultSignal = pyqtSignal(dict)
     def __init__(self, file_type:Literal['image', 'video']):
         super().__init__()
         self.file_type = file_type
@@ -75,7 +79,7 @@ class FileUploadWidget(QGroupBox):
                 for f in filenames:
                     self.file_list.addItem(f)
             else:
-                self.file_list.addItem(f)
+                self.file_list.addItem(filenames)
 
             upload = read_file(filenames)
             data = {"threshold": self.threshold}
@@ -139,7 +143,7 @@ class DragAndDrop(QLabel):  # 가상 os라 안되는 거 같음. 로컬에서 �
     #     super().resizeEvent(event)
 
 
-# logout 버튼만 추가된 기본 위젯
+# logout 버튼만 추가된 기본 위젯 + 
 class DefaultWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -186,19 +190,27 @@ class ImageDetectionWidget(DetectionWidget):
         self.upload_widget = FileUploadWidget(file_type="image")
         self.layout.addWidget(self.upload_widget)
 
-        self.upload_widget.set_url('http://192.168.1.230:4000/upload')
+        self.upload_widget.set_url('http://192.168.1.230:4000/detect/image')
         self.upload_widget.resultSignal.connect(self.show_result)
 
-        self.result_test = QLabel()
-        self.layout.addWidget(self.result_test)
+        self.result_widget = QScrollArea()
+        self.layout.addWidget(self.result_widget)
 
     def index_changed(self, index):
         threshold = super().index_changed(index)
         self.upload_widget.threshold = threshold
 
     def show_result(self, result):
-        pixmap = QPixmap.fromImage(result)
-        self.result_test.setPixmap(pixmap)
+        print(f"at widget: {result}")
+        return
+        for encoded_image in result.keys():
+            image_byte = encoded_image.encode('ascii')
+            image = Image.open(io.BytesIO(image_byte))
+            qimage = ImageQt(image)
+
+            result_image = QLabel()
+            result_image.setPixmap(qimage)
+            self.result_widget.setWidget(result_image)
 
 
 class VideoDetectionWidget(DetectionWidget):
@@ -208,14 +220,20 @@ class VideoDetectionWidget(DetectionWidget):
         self.upload_widget = FileUploadWidget(file_type="video")
         self.layout.addWidget(self.upload_widget)
 
+        self.upload_widget.set_url('http://192.168.1.230:4000/detect/video')
         self.upload_widget.resultSignal.connect(self.show_result)
+
+        self.result_widget = QScrollArea()
+        self.layout.addWidget(self.result_widget)
 
     def index_changed(self, index):
         threshold = super().index_changed(index)
         self.upload_widget.threshold = threshold
 
     def show_result(self, result):
-        pass
+        for key, value in result.items():
+            print(key, value)
+            return
 
 
 class VideoRecognitionWidget(DefaultWidget):
@@ -224,6 +242,15 @@ class VideoRecognitionWidget(DefaultWidget):
         # self.upload_widget = ImageFileUploadWidget()
         self.upload_widget = FileUploadWidget("image")
         self.layout.addWidget(self.upload_widget)
+
+        self.upload_widget.set_url('http://192.168.1.230:4000/recognize/video')
+        self.upload_widget.resultSignal.connect(self.show_result)
+
+        self.result_widget = QScrollArea()
+        self.layout.addWidget(self.result_widget)
+
+    def show_result(self, result):
+        print(result)
 
 
 if __name__ == "__main__":

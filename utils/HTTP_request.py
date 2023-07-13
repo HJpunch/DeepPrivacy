@@ -11,20 +11,30 @@ def __read_file(path:str):
     return {'file': files}
 
 def read_file(files:list):
-    data = [('file', open(f, 'rb')) for f in files]
+    if isinstance(files, list):
+        data = [('file', open(f, 'rb')) for f in files]
+    else:
+        data = [('file', open(files, 'rb'))]
     return data
 
-def post_file(*args, **kwargs) -> list:
-    result = rq.post(*args, **kwargs)
-    result_json = result.json()['result']  # image detection.
-    # return result_json  # ['data/2023_07_11_14_21_08/output/1.jpg']
+def post_file(*args, **kwargs) -> dict:
+    result = rq.post(*args, **kwargs)  # <Response[200]>
+    result_json = result.json()['result']  # image detection.  {'img_name': ['class coord']}
+
+    # for img_name in result_json.keys():
+    #     for idx, temp in enumerate(result_json[img_name]):
+    #         obj_class = temp["class"]
+    #         accuracy = temp["conf"]
+    #         coord = temp["xyxy"]
+
+    #         print(obj_class, accuracy, coord)
+    return result_json
 
     # base64 결과값 디코딩 변환
     for image in result_json.keys():
         image = Image.open(io.BytesIO(image))
         qimage = ImageQt(image)
     return qimage
-
 
 # image detection
 def get_result(result:dict):

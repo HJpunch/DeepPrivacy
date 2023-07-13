@@ -75,7 +75,8 @@ class MainWindow(BasicWindow):
 
     def change_mode(self, action):
         action_list = self.action_group.actions()
-        index = action_list.index(action)
+        checked_action = self.action_group.checkedAction()
+        index = action_list.index(checked_action)
         self.stacked_widget.setCurrentIndex(index)
 
 
