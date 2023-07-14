@@ -87,39 +87,6 @@ class FileUploadWidget(QGroupBox):
             self.resultSignal.emit(result)
 
 
-class ImageFileUploadWidget(FileUploadWidget):
-    def __init__(self):
-        super().__init__(file_type="image")
-        self.setTitle("Upload Image(s)")
-
-    def dialog_open(self):
-        filenames, _ = QFileDialog.getOpenFileNames(\
-            self, "Select one or more images to upload", ".", \
-                "Image(*.png *.jpg)")
-        
-        if filenames:
-            self.file_list.setVisible(True)
-            self.file_list.clear()
-            for f in filenames:
-                self.file_list.addItem(f)
-
-
-class VideoFileUploadWidget(FileUploadWidget):
-    def __init__(self):
-        super().__init__(file_type="video")
-        self.setTitle("Upload Video")
-
-    def dialog_open(self):
-        filename, _ = QFileDialog.getOpenFileName(\
-            self, "Select video to upload", ".", \
-                "Video(*.mp4)")
-        
-        if filename:
-            self.file_list.setVisible(True)
-            self.file_list.clear()
-            self.file_list.addItem(filename)
-
-
 class DragAndDrop(QLabel):  # 가상 os라 안되는 거 같음. 로컬에서 시도해볼 것.
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -186,11 +153,10 @@ class DetectionWidget(DefaultWidget):
 class ImageDetectionWidget(DetectionWidget):
     def __init__(self):
         super().__init__()
-        # self.upload_widget = ImageFileUploadWidget()
         self.upload_widget = FileUploadWidget(file_type="image")
         self.layout.addWidget(self.upload_widget)
 
-        self.upload_widget.set_url('http://192.168.1.230:4000/detect/image')
+        self.upload_widget.set_url('http://192.168.1.230:18400/detect/image')
         self.upload_widget.resultSignal.connect(self.show_result)
 
         self.result_widget = QScrollArea()
@@ -201,26 +167,36 @@ class ImageDetectionWidget(DetectionWidget):
         self.upload_widget.threshold = threshold
 
     def show_result(self, result):
-        print(f"at widget: {result}")
-        return
-        for encoded_image in result.keys():
-            image_byte = encoded_image.encode('ascii')
-            image = Image.open(io.BytesIO(image_byte))
-            qimage = ImageQt(image)
+        result = result['result']
+        print(result, end='\n\n')
+        for img_name in result.keys():
+            if result[img_name] == []:
+                print("None")
+                continue
+            for i, temp in enumerate(result[img_name]):
+                # if len(temp) == 1:
+                #     input_url = temp["input_url"]
+                #     continue
+                obj_class = temp["class"]
+                confidence = temp["conf"]
+                crop_dir = temp["crop_dir"]
+                # crop_url = temp["crop_url"]
+                coord = temp["xyxy"]
 
-            result_image = QLabel()
-            result_image.setPixmap(qimage)
-            self.result_widget.setWidget(result_image)
+            print(f"img_name: {img_name}\n\
+class: {obj_class}\n\
+confidence: {100*confidence:.2f}\n\
+crop_dir: {crop_dir}\n\
+coord: {coord}")
 
 
 class VideoDetectionWidget(DetectionWidget):
     def __init__(self):
         super().__init__()
-        # self.upload_widget = VideoFileUploadWidget()
         self.upload_widget = FileUploadWidget(file_type="video")
         self.layout.addWidget(self.upload_widget)
 
-        self.upload_widget.set_url('http://192.168.1.230:4000/detect/video')
+        self.upload_widget.set_url('http://192.168.1.230:18400/detect/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
         self.result_widget = QScrollArea()
@@ -231,26 +207,50 @@ class VideoDetectionWidget(DetectionWidget):
         self.upload_widget.threshold = threshold
 
     def show_result(self, result):
-        for key, value in result.items():
-            print(key, value)
-            return
+        output_video_dir = result['video_dir']
+        fps = result['fps']
+
+        for i, frame in enumerate(result['result'].keys()):
+            sec = f"{i/fps:.4f}"
+            exp = f"frame_{i} sec: {sec}"
+            print(exp)
+            for temp in result['result'][frame]:
+                obj_class = temp["class"]
+                confidence = temp["conf"]
+                crop_dir = temp["crop_dir"]
+                coord = temp["xyxy"]
+
+                print(f"output_video_dir: {output_video_dir}\n\
+class: {obj_class}\n\
+confidence: {100*confidence:.2f}\n\
+crop_dir: {crop_dir}\n\
+coord: {coord}")
 
 
 class VideoRecognitionWidget(DefaultWidget):
     def __init__(self):
         super().__init__()
-        # self.upload_widget = ImageFileUploadWidget()
         self.upload_widget = FileUploadWidget("image")
         self.layout.addWidget(self.upload_widget)
 
-        self.upload_widget.set_url('http://192.168.1.230:4000/recognize/video')
+        self.upload_widget.set_url('http://192.168.1.230:18400/recognize/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
         self.result_widget = QScrollArea()
         self.layout.addWidget(self.result_widget)
 
     def show_result(self, result):
-        print(result)
+        result = result['result']
+
+        crop_img_dir_list = result['crop_img_dir_list']
+        recognize_result = result['recognize']
+        video_unique_result = result['video']
+
+        if len(crop_img_dir_list) == 0:
+            print("None")
+            return
+        
+        folder_date_dir = '/'.join(crop_img_dir_list[0].split('/')[:-2]) + '/recognize_csv'
 
 
 if __name__ == "__main__":
