@@ -1,9 +1,3 @@
-# # -*- coding: utf-8 -*-
-# import sys
-# import io
-# sys.stdout = io.TextIOWrapper(sys.stdout.detach(), encoding = 'utf-8')
-# sys.stderr = io.TextIOWrapper(sys.stderr.detach(), encoding = 'utf-8')
-
 from PyQt6.QtWidgets import QToolBar, QStackedWidget
 from PyQt6.QtGui import QIcon, QAction, QActionGroup
 from PyQt6.QtCore import Qt, QCoreApplication
@@ -18,8 +12,9 @@ def newIcon(icon:str) -> QIcon:
 
 class MainWindow(BasicWindow):
     # function_index = {"Image\nDetection": 0, "Video\n"}
-    def __init__(self):
+    def __init__(self, ip:str, port:int):
         super().__init__()
+        self.url = f"http://{ip}:{port}"
 
         # define actions
         self.image_detection = self.action(name="Image\nDetection", icon="image_detection.svg")
@@ -53,9 +48,9 @@ class MainWindow(BasicWindow):
 
         # add widgets
         self.stacked_widget = QStackedWidget(self)
-        self.stacked_widget.addWidget(ImageDetectionWidget())
-        self.stacked_widget.addWidget(VideoDetectionWidget())
-        self.stacked_widget.addWidget(VideoRecognitionWidget())
+        self.stacked_widget.addWidget(ImageDetectionWidget(self.url))
+        self.stacked_widget.addWidget(VideoDetectionWidget(self.url))
+        self.stacked_widget.addWidget(VideoRecognitionWidget(self.url))
         self.basic_layout.addWidget(self.stacked_widget)
 
     def action(self, name:str, icon:str=None, shortcut:str=None, tip:str=None) -> QAction:
@@ -84,7 +79,7 @@ if __name__ == "__main__":
     import sys
     from PyQt6.QtWidgets import QApplication
     app = QApplication(sys.argv)
-    window = MainWindow()
+    window = MainWindow(ip='192.168.1.230', port=18400)
     window.show()
 
     app.exec()
