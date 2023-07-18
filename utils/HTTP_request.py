@@ -85,7 +85,7 @@ def get_result(url:str,
 
             if not video:
                 print("None")
-                return
+                continue
             
             for idx in list(video):
                 print(idx)

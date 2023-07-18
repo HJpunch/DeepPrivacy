@@ -9,6 +9,8 @@ from typing import Literal
 
 from windows.basic_window import ICONS_DIR
 from utils.HTTP_request import read_file, post_file, get_result
+from utils.utility_widget import QPixmapLabel, QDragAndDropLabel, QResultDisplayWidget, QDownloadButton,\
+remove_all_widgets
 
 
 class FileUploadWidget(QGroupBox):
@@ -37,7 +39,7 @@ class FileUploadWidget(QGroupBox):
         label.setPixmap(pixmap)
         self.upload_box.addWidget(label)
 
-        label = DragAndDrop("Drag and Drop Files Here")
+        label = QDragAndDropLabel("Drag and Drop Files Here")
         font = label.font()
         font.setBold(True)
         label.setFont(font)
@@ -52,7 +54,11 @@ class FileUploadWidget(QGroupBox):
         self.file_list = QListWidget()
         self.file_list.setVisible(False)
         self.box.addWidget(self.file_list)
-        # self.file_list.model().rowsInserted.connect(self.request)
+
+        self.result_widget = QWidget()
+        self.result_widget.setVisible(False)
+        self.result_widget.setLayout(QVBoxLayout())
+        self.box.addWidget(self.result_widget)
 
     def set_url(self, url):
         self.url = url
@@ -72,8 +78,10 @@ class FileUploadWidget(QGroupBox):
                 filter=filter)
         
         if filenames:
+            self.clear()
             self.file_list.setVisible(True)
-            self.file_list.clear()
+            self.result_widget.setVisible(True)
+
             if isinstance(filenames, list):
                 for f in filenames:
                     self.file_list.addItem(f)
@@ -85,28 +93,11 @@ class FileUploadWidget(QGroupBox):
             result = post_file(url=self.url, files=upload, data=data)
             self.resultSignal.emit(result)
 
-
-class DragAndDrop(QLabel):  # 가상 os라 안되는 거 같음. 로컬에서 시도해볼 것.
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setAcceptDrops(True)
-        self.file_list = list()
-
-    def dragEnterEvent(self, event):
-        if event.mimeData().hasUrls():
-            event.accept()
-        
-        else:
-            event.ignore()
-
-    def dropEvent(self, event):
-        files = [url.toLocalFile() for url in event.mimeData().urls()]
-        for f in files:
-            self.file_list.append(f)
-
-    # def resizeEvent(self, event):
-    #     self.label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
-    #     super().resizeEvent(event)
+    def clear(self):
+        self.file_list.clear()
+        remove_all_widgets(self.result_widget.layout())
+        self.file_list.setVisible(False)
+        self.result_widget.setVisible(False)
 
 
 # logout 버튼만 추가된 기본 위젯 + 
@@ -122,6 +113,9 @@ class DefaultWidget(QWidget):
         self.logout = QPushButton("Logout")
         self.logout.setMaximumWidth(100)
         self.layout.addWidget(self.logout)
+
+        # self.result_widget = QWidget()
+        # self.result_widget.setLayout(QVBoxLayout())
         
 
 # 개인정보 탐지 강도 선택 기능 추가
@@ -159,9 +153,7 @@ class ImageDetectionWidget(DetectionWidget):
         self.upload_widget.set_url(f'{self.url}/detect/image')
         self.upload_widget.resultSignal.connect(self.show_result)
 
-        self.result_widget = QScrollArea()
-        self.result_widget.setLayout(QVBoxLayout())
-        self.layout.addWidget(self.result_widget)
+        # self.layout.addWidget(self.result_widget)
 
     def index_changed(self, index):
         threshold = super().index_changed(index)
@@ -170,30 +162,34 @@ class ImageDetectionWidget(DetectionWidget):
     def show_result(self, result):
         result = result['result']
 
-        for i, image_name in enumerate(result.keys()):
-            detect_result = ResultDisplayWidget(title="Detection Information")
-            self.result_widget.layout().addWidget(detect_result)
-
+        for image_name in result.keys():
             if result[image_name] == []:
-                detect_result.add_label(data="None", row=i, col=i)
+                detect_result.add_label(data="None", row=0, col=0)
                 continue
 
-            # image_url = f"{self.url}/{image_name}"
-            # image = urllib.request.urlopen(image_url).read()
-            # detect_result.add_image(data=image, row=i, col=i)
+            container = QWidget()
+            container.setLayout(QHBoxLayout())
+            image_url = f"{self.url}/{image_name}"
+            image = urllib.request.urlopen(image_url).read()
+            label = QPixmapLabel(data=image)
+            container.layout().addWidget(label)
 
-            for temp in result[image_name]:
+            detect_result = QResultDisplayWidget(title="Detection Information")
+            container.layout().addWidget(detect_result)
+            self.upload_widget.result_widget.layout().addWidget(container)
+
+            for i, temp in enumerate(result[image_name]):
                 obj_class = temp['class']
                 confidence = temp['conf']
                 crop_dir = temp['crop_dir']
                 coord = temp['xyxy']
 
-                crop_url = self.url + "/" + crop_dir
+                crop_url = f"{self.url}/{crop_dir}"
                 crop_image = urllib.request.urlopen(crop_url).read()
-                detect_result.add_image(data=crop_image, row=i, col=i+1)
+                detect_result.add_image(data=crop_image, row=i, col=0)
 
                 label = f"class: {obj_class}\n\nconfidence: {confidence}\n\ncoord: {coord}"
-                detect_result.add_label(data=label, row=i, col=i+1)
+                detect_result.add_label(data=label, row=i, col=1)
 
 
 class VideoDetectionWidget(DetectionWidget):
@@ -205,18 +201,40 @@ class VideoDetectionWidget(DetectionWidget):
         self.upload_widget.set_url(f'{self.url}/detect/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
-        self.result_widget = QScrollArea()
-        self.layout.addWidget(self.result_widget)
+        # self.layout.addWidget(self.result_widget)
 
     def index_changed(self, index):
         threshold = super().index_changed(index)
         self.upload_widget.threshold = threshold
 
     def show_result(self, result):
-        r"""
-        결과 영상 다운로드는 get으로 받아와 저장?
-        """
-        get_result(result, mode='video_detection')
+        output_video_dir = result['video_dir']
+        output_video_url = f"{self.url}/{output_video_dir}"
+        fps = result['fps']
+
+        download_button = QDownloadButton("Douwnload Output Video")
+        download_button.set_url(output_video_url)
+        self.upload_widget.result_widget.layout().addWidget(download_button)
+
+        for i, frame in enumerate(result['result'].keys()):
+            sec = f"{i/fps:.4f}"
+            exp = f"frame_{i}   sec: {sec}"
+
+            detect_result = QResultDisplayWidget(title=exp)
+            self.upload_widget.result_widget.layout().addWidget(detect_result)
+
+            for idx, temp in enumerate(result['result'][frame]):
+                obj_class = temp['class']
+                confidence = temp['conf']
+                crop_dir = temp['crop_dir']
+                coord = temp['xyxy']
+
+                crop_url = f"{self.url}/{crop_dir}"
+                crop_image = urllib.request.urlopen(crop_url).read()
+                detect_result.add_image(data=crop_image, row=idx, col=0)
+
+                label = f"class: {obj_class}\n\nconfidence: {confidence}\n\ncoord: {coord}"
+                detect_result.add_label(data=label, row=idx, col=1)
 
 
 class VideoRecognitionWidget(DefaultWidget):
@@ -228,26 +246,58 @@ class VideoRecognitionWidget(DefaultWidget):
         self.upload_widget.set_url(f'{self.url}/recognize/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
-        self.result_widget = QScrollArea()
-        self.layout.addWidget(self.result_widget)
+        # self.layout.addWidget(self.result_widget)
 
     def show_result(self, result):
-        get_result(result, mode='video_recognition')
+        csv_save_dir = result['csv_save_dir']
+        result = result['result']
 
+        crop_img_dir_list = result['crop_img_dir_list']
+        recognize_result = result['recognize']
+        video_unique_result = result['video']
 
-class ResultDisplayWidget(QGroupBox):
-    def __init__(self, title:str):
-        super().__init__()
-        self.layout = QGridLayout()
-        self.setTitle(title)
+        if len(crop_img_dir_list) == 0:
+            self.upload_widget.result_widget.layout().addWidget(QResultDisplayWidget(title="None"))
+            return
 
-    def add_image(self, data:bytes, row:int, col:int):
-        pixmap = QPixmap()
-        pixmap.loadFromData(data)
-        self.layout.addWidget(QLabel().setPixmap(pixmap), row, col)
+        for i, (img_json, video) in enumerate(zip(recognize_result, video_unique_result)):
+            crop_dir = crop_img_dir_list[i]
+            csv = csv_save_dir + f"/result_{i}.csv"
+            csv_url = f"{self.url}/{csv}"
 
-    def add_label(self, data:str, row:int, col:int):
-        self.layout.addWidget(QLabel(data), row, col)
+            recognize_result_widget = QResultDisplayWidget(title=f"face {i}")
+            self.upload_widget.result_widget.layout().addWidget(recognize_result_widget)
+
+            crop_url = f"{self.url}/{crop_dir}"
+            crop_image = urllib.request.urlopen(crop_url).read()
+            recognize_result_widget.add_image(data=crop_image, row=0, col=0)
+
+            download_button = QDownloadButton("Download CSV File")
+            download_button.set_url(csv_url)
+
+            if not video:
+                recognize_result_widget.add_label(data="None", row=0, col=1)
+                continue
+
+            video_list = [i for i in list(video)]
+            recognize_result_widget.add_label(data=str(video_list), row=0, col=1)
+            recognize_result_widget.layout().addWidget(download_button, 1, 0)
+
+            df = pd.DataFrame(img_json)
+            for row in range(len(df)):
+                temp = df.iloc[row]
+                image_path = temp['path']
+                frame = temp['frame']
+                video_name = [temp['video']]
+                conf = temp['theta']
+
+                # 서버 내 별도 디렉토리에 있어 가져올 수 없음
+                # image_url = f"{self.url}/{image_path}"
+                # image = urllib.request.urlopen(image_url).read()
+                # recognize_result_widget.add_image(data=image, row=row+1, col=0)
+
+                label = f"frame: {frame}\nvideo: {video_name}\nconfidence: {conf}"
+                recognize_result_widget.add_label(data=label, row=row+2, col=1)
 
 
 if __name__ == "__main__":

@@ -1,9 +1,8 @@
 #-*-coding:utf-8-*-
 import os
 
-from PyQt6 import QtWidgets
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QLayout
+from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QScrollArea
 from PyQt6.QtGui import QPixmap
 
 ASSET = os.path.dirname(os.path.abspath(os.path.dirname(__file__))) + "/asset"
@@ -17,9 +16,11 @@ class BasicWindow(QMainWindow):
 
         self.setWindowTitle("DeepPrivacy")
 
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
         self.basic_widget = QWidget()
         self.basic_layout = QVBoxLayout()
-        self.basic_layout.setSizeConstraint(QLayout.SizeConstraint.SetMaximumSize)
+        # self.basic_layout.setSizeConstraint(QLayout.SizeConstraint.SetMaximumSize)
 
         self.logo = QLabel()
         self.logo.setMinimumSize(1,1)
@@ -28,7 +29,10 @@ class BasicWindow(QMainWindow):
         self.basic_layout.addWidget(self.logo)
 
         self.basic_widget.setLayout(self.basic_layout)
-        self.setCentralWidget(self.basic_widget)
+        # self.setCentralWidget(self.basic_widget)
+
+        scroll_area.setWidget(self.basic_widget)
+        self.setCentralWidget(scroll_area)
 
     def resizeEvent(self, event):
         width = self.width() if self.width() <= self.logo_image.width() else self.logo_image.width()
