@@ -3,6 +3,7 @@ from PyQt6.QtGui import QIcon, QAction, QActionGroup
 from PyQt6.QtCore import Qt, QCoreApplication
 
 from windows.basic_window import BasicWindow, ICONS_DIR
+from windows.login_window import LoginWindow
 from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget
 
 
@@ -51,6 +52,7 @@ class MainWindow(BasicWindow):
         self.stacked_widget.addWidget(ImageDetectionWidget(self.url))
         self.stacked_widget.addWidget(VideoDetectionWidget(self.url))
         self.stacked_widget.addWidget(VideoRecognitionWidget(self.url))
+        self.stacked_widget.setCurrentIndex(0)
         self.basic_layout.addWidget(self.stacked_widget)
 
     def action(self, name:str, icon:str=None, shortcut:str=None, tip:str=None) -> QAction:
@@ -78,7 +80,9 @@ class MainWindow(BasicWindow):
 
         if pre_index != post_index:
             pre_widget.upload_widget.clear()
+            self.stacked_widget.setCurrentIndex(post_index)
             self.stacked_widget.setCurrentIndex(pre_index)
+            self.stacked_widget.setCurrentIndex(post_index)
 
 
 if __name__ == "__main__":

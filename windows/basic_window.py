@@ -15,6 +15,7 @@ class BasicWindow(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("DeepPrivacy")
+        self.resize(820, 640)
 
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
@@ -23,7 +24,7 @@ class BasicWindow(QMainWindow):
         # self.basic_layout.setSizeConstraint(QLayout.SizeConstraint.SetMaximumSize)
 
         self.logo = QLabel()
-        self.logo.setMinimumSize(1,1)
+        # self.logo.setMinimumSize(1,1)
         self.logo_image = QPixmap(ASSET + "/templates/DeepPrivacy_Dark.png")
         self.logo.setPixmap(self.logo_image)
         self.basic_layout.addWidget(self.logo)
@@ -37,13 +38,10 @@ class BasicWindow(QMainWindow):
     def resizeEvent(self, event):
         width = self.width() if self.width() <= self.logo_image.width() else self.logo_image.width()
         height = self.height() if self.height() <= self.logo_image.height() else self.logo_image.height()
-        # width = self.width() if self.width() <= self.logo_image.width() else self.logo_image.width()
-        # height = self.height() if self.height() <= self.logo_image.height() else self.logo_image.height()
 
         self.logo.setPixmap(self.logo_image.scaled(width, height, Qt.AspectRatioMode.KeepAspectRatio))
         self.logo.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.basic_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
         super().resizeEvent(event)
 
 

@@ -1,6 +1,12 @@
 from requests import get
-from PyQt6.QtWidgets import QLayout, QGridLayout, QLabel, QGroupBox, QPushButton, QFileDialog
+from PyQt6.QtWidgets import QLayout, QGridLayout, QLabel, QGroupBox, QPushButton, \
+    QFileDialog, QMessageBox
 from PyQt6.QtGui import QPixmap
+
+
+def remove_all_widgets(layout:QLayout):
+    for i in reversed(range(layout.count())):
+        layout.itemAt(i).widget().deleteLater()
 
 
 class QPixmapLabel(QLabel):
@@ -72,6 +78,13 @@ class QDownloadButton(QPushButton):
                 f.write(response.content)
 
     
-def remove_all_widgets(layout:QLayout):
-    for i in reversed(range(layout.count())):
-        layout.itemAt(i).widget().deleteLater()
+class QConnectionErrorButton(QMessageBox):
+    def __init__(self, *args, **kwargs):
+        if 'url' in kwargs:
+            url = kwargs.pop('url')
+        super().__init__(*args, **kwargs)
+        self.setWindowTitle("Server Connection Error")
+        self.setText(f"No connection adapters were found for {url}.\n\
+Please try again later or contact system administrator")
+        self.setStandardButtons(QMessageBox.StandardButton.Close)
+        self.setIcon(QMessageBox.Icon.Critical)

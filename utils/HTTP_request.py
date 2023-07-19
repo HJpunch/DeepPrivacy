@@ -4,6 +4,18 @@ import pandas as pd
 from typing import Literal
 
 
+def check_server_status(url:str) -> bool:
+    try:
+        response = rq.get(url)
+    
+    except rq.exceptions.ConnectionError:
+        return False
+    
+    else:
+        if response.status_code == 200:
+            return True
+        return False
+
 def read_file(files:list):
     if isinstance(files, list):
         data = [('file', open(f, 'rb')) for f in files]
@@ -15,6 +27,10 @@ def post_file(*args, **kwargs) -> dict:
     result = rq.post(*args, **kwargs)  # <Response[200]>
     result_json = result.json()
     return result_json
+
+def get_file(url:str):
+    response = rq.get(url)
+    return response.content
 
 def get_result(url:str,
                result:dict, 

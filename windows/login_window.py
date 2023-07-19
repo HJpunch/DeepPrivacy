@@ -3,8 +3,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QLabel, QLineEdit, \
     QPushButton, QMainWindow, QGroupBox
 from PyQt6 import QtWidgets
 
-from basic_window import BasicWindow
-from login_designer import Ui_Login
+from windows.basic_window import BasicWindow
 
 
 class LoginWindow(BasicWindow):

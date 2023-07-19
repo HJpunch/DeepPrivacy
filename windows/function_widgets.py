@@ -1,16 +1,15 @@
 import pandas as pd
-import urllib.request
 
-from PyQt6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout, QGridLayout,\
-    QLabel, QPushButton, QComboBox, QFileDialog, QListWidget, QScrollArea
+from PyQt6.QtWidgets import QWidget, QGroupBox, QVBoxLayout, QHBoxLayout,\
+    QLabel, QPushButton, QComboBox, QFileDialog, QListWidget
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal
 from typing import Literal
 
 from windows.basic_window import ICONS_DIR
-from utils.HTTP_request import read_file, post_file, get_result
-from utils.utility_widget import QPixmapLabel, QDragAndDropLabel, QResultDisplayWidget, QDownloadButton,\
-remove_all_widgets
+from utils.HTTP_request import check_server_status, read_file, post_file, get_file
+from utils.utility_widget import remove_all_widgets, QPixmapLabel, QDragAndDropLabel, QResultDisplayWidget, QDownloadButton,\
+ QConnectionErrorButton
 
 
 class FileUploadWidget(QGroupBox):
@@ -19,6 +18,7 @@ class FileUploadWidget(QGroupBox):
         super().__init__()
         self.file_type = file_type
         self.threshold = 0.5
+        self.root_url = str()  # url for server status check
         self.url = str()
 
         self.setTitle("Upload File")
@@ -60,6 +60,9 @@ class FileUploadWidget(QGroupBox):
         self.result_widget.setLayout(QVBoxLayout())
         self.box.addWidget(self.result_widget)
 
+    def set_root_url(self, url):
+        self.root_url = url
+
     def set_url(self, url):
         self.url = url
 
@@ -77,6 +80,11 @@ class FileUploadWidget(QGroupBox):
                 parent=self, caption=caption, directory=".",\
                 filter=filter)
         
+        if not check_server_status(self.root_url):
+            button = QConnectionErrorButton(parent=self, url=self.url)
+            button.exec()
+            return
+
         if filenames:
             self.clear()
             self.file_list.setVisible(True)
@@ -150,6 +158,7 @@ class ImageDetectionWidget(DetectionWidget):
         self.upload_widget = FileUploadWidget(file_type="image")
         self.layout.addWidget(self.upload_widget)
 
+        self.upload_widget.set_root_url(url)
         self.upload_widget.set_url(f'{self.url}/detect/image')
         self.upload_widget.resultSignal.connect(self.show_result)
 
@@ -163,20 +172,20 @@ class ImageDetectionWidget(DetectionWidget):
         result = result['result']
 
         for image_name in result.keys():
-            if result[image_name] == []:
-                detect_result.add_label(data="None", row=0, col=0)
-                continue
-
             container = QWidget()
             container.setLayout(QHBoxLayout())
             image_url = f"{self.url}/{image_name}"
-            image = urllib.request.urlopen(image_url).read()
+            image = get_file(image_url)
             label = QPixmapLabel(data=image)
             container.layout().addWidget(label)
 
             detect_result = QResultDisplayWidget(title="Detection Information")
             container.layout().addWidget(detect_result)
             self.upload_widget.result_widget.layout().addWidget(container)
+
+            if result[image_name] == []:
+                detect_result.add_label(data="None", row=0, col=0)
+                continue
 
             for i, temp in enumerate(result[image_name]):
                 obj_class = temp['class']
@@ -185,7 +194,7 @@ class ImageDetectionWidget(DetectionWidget):
                 coord = temp['xyxy']
 
                 crop_url = f"{self.url}/{crop_dir}"
-                crop_image = urllib.request.urlopen(crop_url).read()
+                crop_image = get_file(crop_url)
                 detect_result.add_image(data=crop_image, row=i, col=0)
 
                 label = f"class: {obj_class}\n\nconfidence: {confidence}\n\ncoord: {coord}"
@@ -198,6 +207,7 @@ class VideoDetectionWidget(DetectionWidget):
         self.upload_widget = FileUploadWidget(file_type="video")
         self.layout.addWidget(self.upload_widget)
 
+        self.upload_widget.set_root_url(url)
         self.upload_widget.set_url(f'{self.url}/detect/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
@@ -230,7 +240,7 @@ class VideoDetectionWidget(DetectionWidget):
                 coord = temp['xyxy']
 
                 crop_url = f"{self.url}/{crop_dir}"
-                crop_image = urllib.request.urlopen(crop_url).read()
+                crop_image = get_file(crop_url)
                 detect_result.add_image(data=crop_image, row=idx, col=0)
 
                 label = f"class: {obj_class}\n\nconfidence: {confidence}\n\ncoord: {coord}"
@@ -243,6 +253,7 @@ class VideoRecognitionWidget(DefaultWidget):
         self.upload_widget = FileUploadWidget("image")
         self.layout.addWidget(self.upload_widget)
 
+        self.upload_widget.set_root_url(url)
         self.upload_widget.set_url(f'{self.url}/recognize/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
@@ -269,7 +280,7 @@ class VideoRecognitionWidget(DefaultWidget):
             self.upload_widget.result_widget.layout().addWidget(recognize_result_widget)
 
             crop_url = f"{self.url}/{crop_dir}"
-            crop_image = urllib.request.urlopen(crop_url).read()
+            crop_image = get_file(crop_url)
             recognize_result_widget.add_image(data=crop_image, row=0, col=0)
 
             download_button = QDownloadButton("Download CSV File")
@@ -293,7 +304,7 @@ class VideoRecognitionWidget(DefaultWidget):
 
                 # 서버 내 별도 디렉토리에 있어 가져올 수 없음
                 # image_url = f"{self.url}/{image_path}"
-                # image = urllib.request.urlopen(image_url).read()
+                # image = get_file(image_url)
                 # recognize_result_widget.add_image(data=image, row=row+1, col=0)
 
                 label = f"frame: {frame}\nvideo: {video_name}\nconfidence: {conf}"
