@@ -16,6 +16,7 @@ TODO
 1. 로그인위젯 - stacked widget에 추가, flask로 로그인 구현
    flask에 /login route 파서 인증 후 인증되면 current widget 이미지 탐지로 변경
    로그아웃하면 다시 current widget 로그인위젯으로 설정
+   -> 해결.
 
 2. 파일 업로드 전 서버 연결 상태 확인 
    파일 업로드 하면 / route에 get 보내서 response code 200이면 그 때 업로드 하기
@@ -34,10 +35,16 @@ TODO
    -> 해결. 좀 이상하긴 한데 암튼 됨
 
 7. 서버쪽 문제로 result 못 받아올 시 오류 dialog 띄우기
+   -> 해결. post_file 메서드에서 예외처리
 
-8. requests에 csrf token pass
-   -> 그냥 쓰지 말자..
-
-9. result에서 urllib 쓴 부분 requests로 교체
+8. result에서 urllib 쓴 부분 requests로 교체
    -> 해결.
+
+9. error dialog 클래스로 만들어서 돌려쓰기
+   -> 해결
+
+10. 회원가입 기능
+    -> 해결.
+
+11. 로그아웃을 차라리 툴바에?
 """

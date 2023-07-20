@@ -1,4 +1,7 @@
 __pycache__/
+.venv/
 data/
+poetry.lock
+pyproject.toml
 todo.txt
 

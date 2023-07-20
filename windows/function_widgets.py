@@ -9,7 +9,7 @@ from typing import Literal
 from windows.basic_window import ICONS_DIR
 from utils.HTTP_request import check_server_status, read_file, post_file, get_file
 from utils.utility_widget import remove_all_widgets, QPixmapLabel, QDragAndDropLabel, QResultDisplayWidget, QDownloadButton,\
- QConnectionErrorButton
+ QConnectionErrorMessage
 
 
 class FileUploadWidget(QGroupBox):
@@ -81,8 +81,7 @@ class FileUploadWidget(QGroupBox):
                 filter=filter)
         
         if not check_server_status(self.root_url):
-            button = QConnectionErrorButton(parent=self, url=self.url)
-            button.exec()
+            QConnectionErrorMessage(parent=self, url=self.url).exec()
             return
 
         if filenames:
@@ -98,8 +97,13 @@ class FileUploadWidget(QGroupBox):
 
             upload = read_file(filenames)
             data = {"threshold": self.threshold}
-            result = post_file(url=self.url, files=upload, data=data)
-            self.resultSignal.emit(result)
+
+            try:
+                result = post_file(url=self.url, files=upload, data=data)
+                self.resultSignal.emit(result)
+            except ValueError:
+                QConnectionErrorMessage(parent=self, url=self.url).exec()
+                return
 
     def clear(self):
         self.file_list.clear()
@@ -110,6 +114,7 @@ class FileUploadWidget(QGroupBox):
 
 # logout 버튼만 추가된 기본 위젯 + 
 class DefaultWidget(QWidget):
+    logoutSignal = pyqtSignal()
     def __init__(self, url):
         super().__init__()
         self.url = url
@@ -122,8 +127,10 @@ class DefaultWidget(QWidget):
         self.logout.setMaximumWidth(100)
         self.layout.addWidget(self.logout)
 
-        # self.result_widget = QWidget()
-        # self.result_widget.setLayout(QVBoxLayout())
+        self.logout.clicked.connect(self.logout_signal)
+
+    def logout_signal(self):
+        self.logoutSignal.emit()
         
 
 # 개인정보 탐지 강도 선택 기능 추가
@@ -161,8 +168,6 @@ class ImageDetectionWidget(DetectionWidget):
         self.upload_widget.set_root_url(url)
         self.upload_widget.set_url(f'{self.url}/detect/image')
         self.upload_widget.resultSignal.connect(self.show_result)
-
-        # self.layout.addWidget(self.result_widget)
 
     def index_changed(self, index):
         threshold = super().index_changed(index)
@@ -211,8 +216,6 @@ class VideoDetectionWidget(DetectionWidget):
         self.upload_widget.set_url(f'{self.url}/detect/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
-        # self.layout.addWidget(self.result_widget)
-
     def index_changed(self, index):
         threshold = super().index_changed(index)
         self.upload_widget.threshold = threshold
@@ -256,8 +259,6 @@ class VideoRecognitionWidget(DefaultWidget):
         self.upload_widget.set_root_url(url)
         self.upload_widget.set_url(f'{self.url}/recognize/video')
         self.upload_widget.resultSignal.connect(self.show_result)
-
-        # self.layout.addWidget(self.result_widget)
 
     def show_result(self, result):
         csv_save_dir = result['csv_save_dir']

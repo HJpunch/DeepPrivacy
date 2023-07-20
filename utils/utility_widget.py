@@ -1,4 +1,5 @@
 from requests import get
+from typing import Literal
 from PyQt6.QtWidgets import QLayout, QGridLayout, QLabel, QGroupBox, QPushButton, \
     QFileDialog, QMessageBox
 from PyQt6.QtGui import QPixmap
@@ -60,6 +61,7 @@ class QResultDisplayWidget(QGroupBox):
 class QDownloadButton(QPushButton):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setMaximumWidth(200)
 
         self.clicked.connect(self.download)
 
@@ -77,14 +79,33 @@ class QDownloadButton(QPushButton):
                 response = get(self.url)
                 f.write(response.content)
 
-    
-class QConnectionErrorButton(QMessageBox):
-    def __init__(self, *args, **kwargs):
-        if 'url' in kwargs:
-            url = kwargs.pop('url')
-        super().__init__(*args, **kwargs)
+
+class QErrorMessage(QMessageBox):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setStandardButtons(QMessageBox.StandardButton.Close)
+        self.setIcon(QMessageBox.Icon.Critical)
+
+
+class QConnectionErrorMessage(QErrorMessage):
+    def __init__(self, parent, url):
+        # if 'url' in kwargs:
+        #     url = kwargs.pop('url')
+        # super().__init__(*args, **kwargs)
+        super().__init__(parent)
         self.setWindowTitle("Server Connection Error")
         self.setText(f"No connection adapters were found for {url}.\n\
 Please try again later or contact system administrator")
-        self.setStandardButtons(QMessageBox.StandardButton.Close)
-        self.setIcon(QMessageBox.Icon.Critical)
+        
+    
+class QLoginErrorMessage(QErrorMessage):
+    def __init__(self, parent, error:Literal['userid', 'password']):
+        super().__init__(parent)
+
+        self.setWindowTitle("Login Failure")
+
+        if error == 'userid':
+            self.setText("There is no registered member information.\n\
+Please check your ID again or use it after registering as a member.")
+        elif error =='password':
+            self.setText("Password error. Please try again.")

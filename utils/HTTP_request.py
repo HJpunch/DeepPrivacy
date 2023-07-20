@@ -24,9 +24,12 @@ def read_file(files:list):
     return data
 
 def post_file(*args, **kwargs) -> dict:
-    result = rq.post(*args, **kwargs)  # <Response[200]>
-    result_json = result.json()
-    return result_json
+    response = rq.post(*args, **kwargs)
+    if response.status_code == 200:
+        result_json = response.json()
+        return result_json
+    else:
+        raise ValueError
 
 def get_file(url:str):
     response = rq.get(url)
