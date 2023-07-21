@@ -1,3 +1,4 @@
+from PyQt6 import QtGui
 import requests
 
 from PyQt6.QtWidgets import QToolBar, QStackedWidget
@@ -7,18 +8,19 @@ from PyQt6.QtCore import Qt, QCoreApplication
 from windows.basic_window import BasicWindow, ICONS_DIR
 from windows.login_widget import LoginWidget
 from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget
-from utils.utility_widget import QLoginErrorMessage
+from utils.utility_widget import QLoginErrorMessage, QConnectionErrorMessage
+from utils.HTTP_request import check_server_status
 
 def newIcon(icon:str) -> QIcon:
     return QIcon(ICONS_DIR + icon)
 
 
 class MainWindow(BasicWindow):
-    # function_index = {"Image\nDetection": 0, "Video\n"}
     def __init__(self, ip:str, port:int):
         super().__init__()
         self.url = f"http://{ip}:{port}"
-        self.login = LoginWidget(self.url)
+        self.login_widget = LoginWidget(self.url)
+        self.login_status = False
 
         self.image_detection_widget = ImageDetectionWidget(self.url)
         self.video_detection_widget = VideoDetectionWidget(self.url)
@@ -36,7 +38,7 @@ class MainWindow(BasicWindow):
         self.app_logout.triggered.connect(self.try_logout)
         self.app_logout.setDisabled(True)
         app_quit = self.action("Quit", icon="quit.svg", shortcut="Ctrl+q", tip="Quit Application")
-        app_quit.triggered.connect(QCoreApplication.instance().quit)
+        app_quit.triggered.connect(self.quit)
 
         # create toolbar
         toolbar = QToolBar("Tool Bar")
@@ -58,24 +60,23 @@ class MainWindow(BasicWindow):
         self.action_group.setExclusive(True)
         self.action_group.triggered.connect(self.change_mode)
         self.action_group.setDisabled(True)  # disable until login
-        # self.image_detection.setChecked(True)
 
         # add widgets
         self.stacked_widget = QStackedWidget(self)
         self.stacked_widget.addWidget(self.image_detection_widget)
         self.stacked_widget.addWidget(self.video_detection_widget)
         self.stacked_widget.addWidget(self.video_recognition_widget)
-        self.stacked_widget.addWidget(self.login)
+        self.stacked_widget.addWidget(self.login_widget)
         self.stacked_widget.setCurrentIndex(3)  # set login widget for default
         self.basic_layout.addWidget(self.stacked_widget)
 
-        self.login.loginSignal.connect(self.try_login)
+        self.login_widget.loginSignal.connect(self.try_login)
 
-        function_widget_list = [self.image_detection_widget,
-                                self.video_detection_widget,
-                                self.video_recognition_widget]
-        for widget in function_widget_list:
-            widget.logoutSignal.connect(self.try_logout)
+        # function_widget_list = [self.image_detection_widget,
+        #                         self.video_detection_widget,
+        #                         self.video_recognition_widget]
+        # for widget in function_widget_list:
+        #     widget.logoutSignal.connect(self.try_logout)
 
 
     def action(self, name:str, icon:str=None, shortcut:str=None, tip:str=None) -> QAction:
@@ -107,28 +108,19 @@ class MainWindow(BasicWindow):
             self.stacked_widget.setCurrentIndex(pre_index)
             self.stacked_widget.setCurrentIndex(post_index)
 
-    def try_login(self, login_form):
-        response = requests.post(url=f"{self.url}/login", data=login_form)
-        
-        if response.status_code == 200:
-            result = response.json()['result']
-            if result:
-                self.app_logout.setEnabled(True)
-                self.action_group.setEnabled(True)
-                self.image_detection_act.setChecked(True)
-                self.stacked_widget.setCurrentIndex(0)
-            else:  # id o, pw x
-                QLoginErrorMessage(parent=self, error='password').exec()
-                return
-
-        else:  # id x
-            QLoginErrorMessage(parent=self, error='userid').exec()
-            return
+    def try_login(self, signal):
+        if signal and not self.login_status:
+            self.login_status = True
+            self.app_logout.setEnabled(True)
+            self.action_group.setEnabled(True)
+            self.image_detection_act.setChecked(True)
+            self.stacked_widget.setCurrentIndex(0)
 
     def try_logout(self):
         response = requests.get(url=f"{self.url}/logout")
         result = response.json()['result']
-        if result:  # 로그인화면으로
+        if result:  # to login widget
+            self.login_status = False
             pre_widget = self.stacked_widget.currentWidget()
             pre_index = self.stacked_widget.currentIndex()
             pre_widget.upload_widget.clear()
@@ -139,7 +131,16 @@ class MainWindow(BasicWindow):
 
             self.app_logout.setDisabled(True)
             self.action_group.setDisabled(True)
-        
+
+    def quit(self):
+        if self.login_status:
+            self.try_logout()
+        QCoreApplication.instance().quit()
+
+    def closeEvent(self, event):
+        self.quit()
+        super().closeEvent(event)
+
 
 if __name__ == "__main__":
     import sys

@@ -23,6 +23,7 @@ class FileUploadWidget(QGroupBox):
 
         self.setTitle("Upload File")
         self.box = QVBoxLayout()
+        self.box.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         self.setLayout(self.box)
 
         self.upload = QWidget()
@@ -123,14 +124,14 @@ class DefaultWidget(QWidget):
         self.setLayout(self.layout)
 
         # define and add logout widget
-        self.logout = QPushButton("Logout")
-        self.logout.setMaximumWidth(100)
-        self.layout.addWidget(self.logout)
+    #     self.logout = QPushButton("Logout")
+    #     self.logout.setMaximumWidth(100)
+    #     self.layout.addWidget(self.logout)
 
-        self.logout.clicked.connect(self.logout_signal)
+    #     self.logout.clicked.connect(self.logout_signal)
 
-    def logout_signal(self):
-        self.logoutSignal.emit()
+    # def logout_signal(self):
+    #     self.logoutSignal.emit()
         
 
 # 개인정보 탐지 강도 선택 기능 추가
@@ -179,11 +180,14 @@ class ImageDetectionWidget(DetectionWidget):
         for image_name in result.keys():
             container = QWidget()
             container.setLayout(QHBoxLayout())
+
+            # query image label
             image_url = f"{self.url}/{image_name}"
             image = get_file(image_url)
-            label = QPixmapLabel(data=image)
+            label = QPixmapLabel(data=image, expanding=True)
             container.layout().addWidget(label)
 
+            # detection result for query
             detect_result = QResultDisplayWidget(title="Detection Information")
             container.layout().addWidget(detect_result)
             self.upload_widget.result_widget.layout().addWidget(container)

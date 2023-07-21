@@ -3,6 +3,7 @@ from typing import Literal
 from PyQt6.QtWidgets import QLayout, QGridLayout, QLabel, QGroupBox, QPushButton, \
     QFileDialog, QMessageBox
 from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import Qt
 
 
 def remove_all_widgets(layout:QLayout):
@@ -11,12 +12,16 @@ def remove_all_widgets(layout:QLayout):
 
 
 class QPixmapLabel(QLabel):
-    def __init__(self, *args, **kwargs):
-        if 'data' in kwargs:  # data: bytes
-            data = kwargs.pop('data')
+    def __init__(self, data, expanding=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         pixmap = QPixmap()
         pixmap.loadFromData(data)
+        if expanding:
+            pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatioByExpanding)    
+        else:
+            pixmap = pixmap.scaled(200, 200, Qt.AspectRatioMode.KeepAspectRatio)
         self.setPixmap(pixmap)
 
 

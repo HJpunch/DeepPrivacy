@@ -4,12 +4,13 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QVBoxLayout, QGridLayout, QLabel, QLineEdit, \
     QPushButton, QGroupBox, QDialog, QDialogButtonBox, QMessageBox, QSizePolicy
 
-from utils.utility_widget import QConnectionErrorMessage
+from utils.utility_widget import QConnectionErrorMessage, QLoginErrorMessage
+from utils.HTTP_request import check_server_status
 
 
 class LoginWidget(QGroupBox):
-    loginSignal = pyqtSignal(dict)
-    joinSignal = pyqtSignal(dict)
+    # loginSignal = pyqtSignal(dict)
+    loginSignal = pyqtSignal(bool)
     def __init__(self, url):
         super().__init__()
         self.url = url
@@ -57,13 +58,29 @@ class LoginWidget(QGroupBox):
         self.layout().addStretch(0)
 
     def send_login_form(self):
+        if not check_server_status(self.url):
+            QConnectionErrorMessage(parent=self, url=self.url).exec()
+            return
+
         userid = self.userid.text()
         password = self.password.text()
-        self.userid.clear()
-        self.password.clear()
-
         login_form = dict(userid=userid, password=password)
-        self.loginSignal.emit(login_form)
+        response = requests.post(url=f"{self.url}/login", data=login_form)
+
+        if response.status_code == 200:
+            result = response.json()['result']
+            if result:
+                self.userid.clear()
+                self.password.clear()
+                self.loginSignal.emit(True)
+            else:  # id o, pw x
+                QLoginErrorMessage(parent=self, error='password').exec()
+                self.password.clear()
+                return
+        else:  # id x
+            QLoginErrorMessage(parent=self, error='userid').exec()
+            self.password.clear()
+            return
 
     def show_join_form(self):
         JoinDialog(parent=self, url=self.url).exec()
