@@ -316,6 +316,11 @@ class VideoRecognitionWidget(DefaultWidget):
                 recognize_result_widget.add_label(data=label, row=row+2, col=1)
 
 
+class PornRecognitionWidget(VideoRecognitionWidget):
+    def __init__(self, url:str):
+        super().__init__(url)
+        self.upload_widget.set_url(f'{self.url}/recognize/video_porn')
+
 if __name__ == "__main__":
     import sys
     from PyQt6.QtWidgets import QApplication

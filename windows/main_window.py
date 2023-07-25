@@ -7,9 +7,7 @@ from PyQt6.QtCore import Qt, QCoreApplication
 
 from windows.basic_window import BasicWindow, ICONS_DIR
 from windows.login_widget import LoginWidget
-from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget
-from utils.utility_widget import QLoginErrorMessage, QConnectionErrorMessage
-from utils.HTTP_request import check_server_status
+from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget, PornRecognitionWidget
 
 def newIcon(icon:str) -> QIcon:
     return QIcon(ICONS_DIR + icon)
@@ -25,6 +23,7 @@ class MainWindow(BasicWindow):
         self.image_detection_widget = ImageDetectionWidget(self.url)
         self.video_detection_widget = VideoDetectionWidget(self.url)
         self.video_recognition_widget = VideoRecognitionWidget(self.url)
+        self.porn_recognition_widget = PornRecognitionWidget(self.url)
 
         # define actions
         self.image_detection_act = self.action(name="Image\nDetection", icon="image_detection.svg")
@@ -33,6 +32,8 @@ class MainWindow(BasicWindow):
         self.video_detection_act.setCheckable(True)
         self.video_recognition_act = self.action(name="Video\nRecognition", icon="video_detection.svg")
         self.video_recognition_act.setCheckable(True)
+        self.porn_recognition_act = self.action(name="Porn\nRecognition", icon="video_detection.svg")
+        self.porn_recognition_act.setCheckable(True)
 
         self.app_logout = self.action("Logout", icon="logout.svg", tip="Logout")
         self.app_logout.triggered.connect(self.try_logout)
@@ -48,6 +49,7 @@ class MainWindow(BasicWindow):
         toolbar.addAction(self.image_detection_act)
         toolbar.addAction(self.video_detection_act)
         toolbar.addAction(self.video_recognition_act)
+        toolbar.addAction(self.porn_recognition_act)
         toolbar.addSeparator()
         toolbar.addAction(self.app_logout)
         toolbar.addAction(app_quit)
@@ -57,6 +59,7 @@ class MainWindow(BasicWindow):
         self.action_group.addAction(self.image_detection_act)
         self.action_group.addAction(self.video_detection_act)
         self.action_group.addAction(self.video_recognition_act)
+        self.action_group.addAction(self.porn_recognition_act)
         self.action_group.setExclusive(True)
         self.action_group.triggered.connect(self.change_mode)
         self.action_group.setDisabled(True)  # disable until login
@@ -66,8 +69,9 @@ class MainWindow(BasicWindow):
         self.stacked_widget.addWidget(self.image_detection_widget)
         self.stacked_widget.addWidget(self.video_detection_widget)
         self.stacked_widget.addWidget(self.video_recognition_widget)
+        self.stacked_widget.addWidget(self.porn_recognition_widget)
         self.stacked_widget.addWidget(self.login_widget)
-        self.stacked_widget.setCurrentIndex(3)  # set login widget for default
+        self.stacked_widget.setCurrentIndex(4)  # set login widget for default
         self.basic_layout.addWidget(self.stacked_widget)
 
         self.login_widget.loginSignal.connect(self.try_login)

@@ -98,20 +98,25 @@ class JoinDialog(QDialog):
 
         self.userid = QLineEdit()
         self.userid.setPlaceholderText("String of 16 characters or less")
+
         self.email = QLineEdit()
         self.email.setPlaceholderText("String of 32 characters of less")
+
         self.password = QLineEdit()
+        self.password.setEchoMode(QLineEdit.EchoMode.Password)
         self.password.setPlaceholderText("String of 16 characters of less")
+        
         self.re_password = QLineEdit()
+        self.re_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.re_password.setPlaceholderText("Enter password one more time")
 
-        layout.addWidget(QLabel("User ID: "), 0, 0)
-        layout.addWidget(self.userid, 0, 1)
-        layout.addWidget(QLabel("User E-mail: "), 1, 0)
-        layout.addWidget(self.email, 1, 1)
+        layout.addWidget(QLabel("Email: "), 0, 0)
+        layout.addWidget(self.email, 0, 1)
+        layout.addWidget(QLabel("ID: "), 1, 0)
+        layout.addWidget(self.userid, 1, 1)
         layout.addWidget(QLabel("Password: "), 2, 0)
         layout.addWidget(self.password, 2, 1)
-        layout.addWidget(QLabel("Verify Password: "), 3, 0)
+        layout.addWidget(QLabel("Repeat Password: "), 3, 0)
         layout.addWidget(self.re_password, 3, 1)
         layout.addWidget(button_box, 4, 1)
 
