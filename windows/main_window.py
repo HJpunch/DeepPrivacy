@@ -1,8 +1,8 @@
 from PyQt6 import QtGui
 import requests
 
-from PyQt6.QtWidgets import QToolBar, QStackedWidget
-from PyQt6.QtGui import QIcon, QAction, QActionGroup
+from PyQt6.QtWidgets import QToolBar, QStackedWidget, QLabel
+from PyQt6.QtGui import QIcon, QAction, QActionGroup, QPixmap
 from PyQt6.QtCore import Qt, QCoreApplication
 
 from windows.basic_window import BasicWindow, ICONS_DIR
@@ -18,6 +18,7 @@ class MainWindow(BasicWindow):
         super().__init__()
         self.url = f"http://{ip}:{port}"
         self.login_widget = LoginWidget(self.url)
+        self.login_widget.loginSignal.connect(self.try_login)
         self.login_status = False
 
         self.image_detection_widget = ImageDetectionWidget(self.url)
@@ -38,24 +39,24 @@ class MainWindow(BasicWindow):
         self.app_logout = self.action("Logout", icon="logout.svg", tip="Logout")
         self.app_logout.triggered.connect(self.try_logout)
         self.app_logout.setDisabled(True)
-        app_quit = self.action("Quit", icon="quit.svg", shortcut="Ctrl+q", tip="Quit Application")
-        app_quit.triggered.connect(self.quit)
+        self.app_quit = self.action("Quit", icon="quit.svg", shortcut="Ctrl+q", tip="Quit Application")
+        self.app_quit.triggered.connect(self.quit)
 
         # create toolbar
-        toolbar = QToolBar("Tool Bar")
-        toolbar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
-        toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
-        self.addToolBar(toolbar)
-        toolbar.addAction(self.image_detection_act)
-        toolbar.addAction(self.video_detection_act)
-        toolbar.addAction(self.video_recognition_act)
-        toolbar.addAction(self.porn_recognition_act)
-        toolbar.addSeparator()
-        toolbar.addAction(self.app_logout)
-        toolbar.addAction(app_quit)
+        self.toolbar = QToolBar("Tool Bar")
+        self.toolbar.setContextMenuPolicy(Qt.ContextMenuPolicy.PreventContextMenu)
+        self.toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+        self.addToolBar(self.toolbar)
+        self.toolbar.addAction(self.image_detection_act)
+        self.toolbar.addAction(self.video_detection_act)
+        self.toolbar.addAction(self.video_recognition_act)
+        self.toolbar.addAction(self.porn_recognition_act)
+        self.toolbar.addSeparator()
+        self.toolbar.addAction(self.app_logout)
+        self.toolbar.addAction(self.app_quit)
 
         # define action group
-        self.action_group = QActionGroup(toolbar)
+        self.action_group = QActionGroup(self.toolbar)
         self.action_group.addAction(self.image_detection_act)
         self.action_group.addAction(self.video_detection_act)
         self.action_group.addAction(self.video_recognition_act)
@@ -71,17 +72,8 @@ class MainWindow(BasicWindow):
         self.stacked_widget.addWidget(self.video_recognition_widget)
         self.stacked_widget.addWidget(self.porn_recognition_widget)
         self.stacked_widget.addWidget(self.login_widget)
-        self.stacked_widget.setCurrentIndex(4)  # set login widget for default
+        self.stacked_widget.setCurrentIndex(self.stacked_widget.count()-1)  # set login widget for default
         self.basic_layout.addWidget(self.stacked_widget)
-
-        self.login_widget.loginSignal.connect(self.try_login)
-
-        # function_widget_list = [self.image_detection_widget,
-        #                         self.video_detection_widget,
-        #                         self.video_recognition_widget]
-        # for widget in function_widget_list:
-        #     widget.logoutSignal.connect(self.try_logout)
-
 
     def action(self, name:str, icon:str=None, shortcut:str=None, tip:str=None) -> QAction:
         if icon:
@@ -113,12 +105,19 @@ class MainWindow(BasicWindow):
             self.stacked_widget.setCurrentIndex(post_index)
 
     def try_login(self, signal):
-        if signal and not self.login_status:
+        if signal == 'user' and not self.login_status:
             self.login_status = True
             self.app_logout.setEnabled(True)
             self.action_group.setEnabled(True)
             self.image_detection_act.setChecked(True)
             self.stacked_widget.setCurrentIndex(0)
+
+        elif signal == 'admin' and not self.login_status:
+            self.login_status = True
+            self.app_logout.setEnabled(True)
+            self.video_detection_act.setEnabled(True)
+            self.video_detection_act.setChecked(True)
+            self.stacked_widget.setCurrentIndex(1)
 
     def try_logout(self):
         response = requests.get(url=f"{self.url}/logout")
@@ -129,9 +128,9 @@ class MainWindow(BasicWindow):
             pre_index = self.stacked_widget.currentIndex()
             pre_widget.upload_widget.clear()
 
-            self.stacked_widget.setCurrentIndex(3)
+            self.stacked_widget.setCurrentIndex(self.stacked_widget.count()-1)
             self.stacked_widget.setCurrentIndex(pre_index)
-            self.stacked_widget.setCurrentIndex(3)
+            self.stacked_widget.setCurrentIndex(self.stacked_widget.count()-1)
 
             self.app_logout.setDisabled(True)
             self.action_group.setDisabled(True)

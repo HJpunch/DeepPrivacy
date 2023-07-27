@@ -10,7 +10,7 @@ from utils.HTTP_request import check_server_status
 
 class LoginWidget(QGroupBox):
     # loginSignal = pyqtSignal(dict)
-    loginSignal = pyqtSignal(bool)
+    loginSignal = pyqtSignal(str)
     def __init__(self, url):
         super().__init__()
         self.url = url
@@ -68,11 +68,19 @@ class LoginWidget(QGroupBox):
         response = requests.post(url=f"{self.url}/login", data=login_form)
 
         if response.status_code == 200:
-            result = response.json()['result']
-            if result:
+            status = response.json()['status']
+            login_type = response.json()['login_type']
+            
+            if status and login_type == 'user':
                 self.userid.clear()
                 self.password.clear()
-                self.loginSignal.emit(True)
+                self.loginSignal.emit('user')
+
+            elif status and login_type == 'admin':
+                self.userid.clear()
+                self.password.clear()
+                self.loginSignal.emit('admin')
+                
             else:  # id o, pw x
                 QLoginErrorMessage(parent=self, error='password').exec()
                 self.password.clear()
