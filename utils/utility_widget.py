@@ -12,7 +12,10 @@ def remove_all_widgets(layout:QLayout):
 
 
 class QPixmapLabel(QLabel):
-    def __init__(self, data, expanding=False, *args, **kwargs):
+    r"""
+    QLabel with pixmap, loaded by byte read image.
+    """
+    def __init__(self, data:bytes, expanding:bool=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
@@ -94,9 +97,6 @@ class QErrorMessage(QMessageBox):
 
 class QConnectionErrorMessage(QErrorMessage):
     def __init__(self, parent, url):
-        # if 'url' in kwargs:
-        #     url = kwargs.pop('url')
-        # super().__init__(*args, **kwargs)
         super().__init__(parent)
         self.setWindowTitle("Server Connection Error")
         self.setText(f"No connection adapters were found for {url}.\n\

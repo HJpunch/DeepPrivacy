@@ -120,8 +120,8 @@ class DefaultWidget(QWidget):
         super().__init__()
         self.url = url
         self.threshold = 0.5
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
+        self.box = QVBoxLayout()
+        self.setLayout(self.box)
 
         # define and add logout widget
     #     self.logout = QPushButton("Logout")
@@ -140,7 +140,7 @@ class DetectionWidget(DefaultWidget):
         super().__init__(url)
 
         self.threshold_group = QGroupBox()
-        self.layout.addWidget(self.threshold_group)
+        self.box.addWidget(self.threshold_group)
         self.threshold_group.setTitle("Select Privacy Detection Strength")
         self.threshold_group.setLayout(QVBoxLayout())
 
@@ -164,10 +164,10 @@ class ImageDetectionWidget(DetectionWidget):
     def __init__(self, url):
         super().__init__(url)
         self.upload_widget = FileUploadWidget(file_type="image")
-        self.layout.addWidget(self.upload_widget)
+        self.box.addWidget(self.upload_widget)
 
         self.upload_widget.set_root_url(url)
-        self.upload_widget.set_url(f'{self.url}/detect/image')
+        self.upload_widget.set_url(f'{url}/detect/image')
         self.upload_widget.resultSignal.connect(self.show_result)
 
     def index_changed(self, index):
@@ -214,10 +214,10 @@ class VideoDetectionWidget(DetectionWidget):
     def __init__(self, url:str):
         super().__init__(url)
         self.upload_widget = FileUploadWidget(file_type="video")
-        self.layout.addWidget(self.upload_widget)
+        self.box.addWidget(self.upload_widget)
 
         self.upload_widget.set_root_url(url)
-        self.upload_widget.set_url(f'{self.url}/detect/video')
+        self.upload_widget.set_url(f'{url}/detect/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
     def index_changed(self, index):
@@ -258,10 +258,10 @@ class VideoRecognitionWidget(DefaultWidget):
     def __init__(self, url:str):
         super().__init__(url)
         self.upload_widget = FileUploadWidget("image")
-        self.layout.addWidget(self.upload_widget)
+        self.box.addWidget(self.upload_widget)
 
         self.upload_widget.set_root_url(url)
-        self.upload_widget.set_url(f'{self.url}/recognize/video')
+        self.upload_widget.set_url(f'{url}/recognize/video')
         self.upload_widget.resultSignal.connect(self.show_result)
 
     def show_result(self, result):
@@ -319,7 +319,18 @@ class VideoRecognitionWidget(DefaultWidget):
 class PornRecognitionWidget(VideoRecognitionWidget):
     def __init__(self, url:str):
         super().__init__(url)
-        self.upload_widget.set_url(f'{self.url}/recognize/video_porn')
+        self.upload_widget.set_url(f'{url}/recognize/video_porn')
+
+
+class VideoAnalysisWidget(VideoDetectionWidget):
+    def __init__(self, url:str):
+        super().__init__(url)
+        self.upload_widget.set_url(f'{url}/admin/video_analysis')
+        self.upload_widget.resultSignal.connect(self.show_result)
+
+    def show_result(self, result):
+        result = result['result']  # bool
+        print(result)
 
 if __name__ == "__main__":
     import sys
