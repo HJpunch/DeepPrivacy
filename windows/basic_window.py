@@ -3,11 +3,14 @@ import os
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QScrollArea
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QPixmap, QIcon
 
 ASSET = os.path.dirname(os.path.abspath(os.path.dirname(__file__))) + "/asset"
 # ASSET = os.path.abspath(os.path.pardir) + "/asset"
 ICONS_DIR = ASSET + "/icons/"
+
+def newIcon(icon:str) -> QIcon:
+    return QIcon(ICONS_DIR + icon)
 
 
 class BasicWindow(QMainWindow):

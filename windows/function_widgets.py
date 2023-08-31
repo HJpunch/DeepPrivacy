@@ -322,16 +322,6 @@ class PornRecognitionWidget(VideoRecognitionWidget):
         self.upload_widget.set_url(f'{url}/recognize/video_porn')
 
 
-class VideoAnalysisWidget(VideoDetectionWidget):
-    def __init__(self, url:str):
-        super().__init__(url)
-        self.upload_widget.set_url(f'{url}/admin/video_analysis')
-        self.upload_widget.resultSignal.connect(self.show_result)
-
-    def show_result(self, result):
-        result = result['result']  # bool
-        print(result)
-
 if __name__ == "__main__":
     import sys
     from PyQt6.QtWidgets import QApplication

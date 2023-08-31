@@ -74,7 +74,7 @@ class LoginWidget(QGroupBox):
             if status and login_type == 'user':
                 self.userid.clear()
                 self.password.clear()
-                self.loginSignal.emit('user')
+                self.loginSignal.emit(userid)
 
             elif status and login_type == 'admin':
                 self.userid.clear()

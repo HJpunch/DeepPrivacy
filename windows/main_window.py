@@ -5,13 +5,11 @@ from PyQt6.QtWidgets import QToolBar, QStackedWidget, QLabel
 from PyQt6.QtGui import QIcon, QAction, QActionGroup, QPixmap
 from PyQt6.QtCore import Qt, QCoreApplication
 
-from windows.basic_window import BasicWindow, ICONS_DIR
-from windows.login_widget import LoginWidget
-from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget, PornRecognitionWidget, \
-                                     VideoAnalysisWidget
-
-def newIcon(icon:str) -> QIcon:
-    return QIcon(ICONS_DIR + icon)
+from windows.basic_window import BasicWindow, newIcon
+from windows.authentication_widget import LoginWidget
+from windows.function_widgets import ImageDetectionWidget, VideoDetectionWidget, VideoRecognitionWidget, PornRecognitionWidget
+from windows.user_service import PrivacyRegisterDialog, PrivacyDetectWidget
+from windows.admin_service import VideoAnalysisWidget
 
 
 class MainWindow(BasicWindow):
@@ -22,7 +20,7 @@ class MainWindow(BasicWindow):
         self.login_widget.loginSignal.connect(self.try_login)
         self.login_status = False
 
-        # define user widget object
+        # define basic widget object
         self.image_detection_widget = ImageDetectionWidget(self.url)
         self.video_detection_widget = VideoDetectionWidget(self.url)
         self.video_recognition_widget = VideoRecognitionWidget(self.url)
@@ -31,7 +29,11 @@ class MainWindow(BasicWindow):
         # define admin widget object
         self.video_analysis_widget = VideoAnalysisWidget(self.url)
 
-        # define user actions
+        # define user widget object
+        self.privacy_registration_widget = PrivacyRegisterDialog(parent=self, url=self.url)
+        self.privacy_detection_widget = PrivacyDetectWidget(url=self.url)
+
+        # define basic actions
         self.image_detection_act = self.action(name="Image\nDetection", icon="image_detection.svg")
         self.image_detection_act.setCheckable(True)
         self.video_detection_act = self.action(name="Video\nDetection", icon="video_detection.svg")
@@ -40,13 +42,18 @@ class MainWindow(BasicWindow):
         self.video_recognition_act.setCheckable(True)
         self.porn_recognition_act = self.action(name="Porn\nRecognition", icon="video_detection.svg")
         self.porn_recognition_act.setCheckable(True)
-
+        
         # define admin actions
         self.video_analysis_act = self.action(name="Video\nAnalysis", icon="video_detection.svg")
         self.video_analysis_act.setCheckable(True)
         self.video_analysis_act.setVisible(False)
 
-        # define general actions
+        # define user actions
+        self.privacy_registration_act = self.action(name="Privacy\nRegistration", icon="privacy.svg")
+        self.privacy_registration_act.triggered.connect(self.privacy_registration_widget.exec)
+        self.privacy_registration_act.setDisabled(True)
+        self.privacy_detection_act = self.action(name="Privacy\nDetection", icon="search.svg")
+        # self.privacy_detection_act.triggerd.connect()
         self.app_logout = self.action("Logout", icon="logout.svg", tip="Logout")
         self.app_logout.triggered.connect(self.try_logout)
         self.app_logout.setDisabled(True)
@@ -63,6 +70,7 @@ class MainWindow(BasicWindow):
         self.toolbar.addAction(self.porn_recognition_act)
         self.toolbar.addAction(self.video_analysis_act)  # admin function
         self.toolbar.addSeparator()
+        self.toolbar.addAction(self.privacy_registration_act)
         self.toolbar.addAction(self.app_logout)
         self.toolbar.addAction(self.app_quit)
         self.addToolBar(self.toolbar)
@@ -77,6 +85,12 @@ class MainWindow(BasicWindow):
         self.action_group.setExclusive(True)
         self.action_group.triggered.connect(self.change_mode)
         self.action_group.setDisabled(True)  # disable until login
+
+        self.user_action_group = QActionGroup(self.toolbar)
+        self.user_action_group.addAction(self.privacy_registration_act)
+        self.user_action_group.addAction(self.privacy_detection_act)
+        self.user_action_group.addAction(self.app_logout)
+        self.user_action_group.setVisible(False)
 
         # add widgets
         self.stacked_widget = QStackedWidget(self)
@@ -107,7 +121,6 @@ class MainWindow(BasicWindow):
     def change_mode(self, action):
         action_list = self.action_group.actions()
         checked_action = self.action_group.checkedAction()
-
         pre_widget = self.stacked_widget.currentWidget()
         pre_index = self.stacked_widget.currentIndex()
         post_index = action_list.index(checked_action)
@@ -119,23 +132,26 @@ class MainWindow(BasicWindow):
             self.stacked_widget.setCurrentIndex(post_index)
 
     def try_login(self, signal):
-        if signal == 'user' and not self.login_status:
+        if signal != 'admin' and not self.login_status:
             self.login_status = True
+            self.privacy_registration_widget.set_userid(signal)
+            self.privacy_registration_act.setEnabled(True)
             self.app_logout.setEnabled(True)
 
             self.action_group.setEnabled(True)
             self.image_detection_act.setChecked(True)
             self.stacked_widget.setCurrentIndex(0)
 
+            self.user_action_group.setVisible(True)
+
         elif signal == 'admin' and not self.login_status:
             self.login_status = True
             self.app_logout.setEnabled(True)
-            self.toolbar.insertAction(self.app_logout, self.video_analysis_act)
 
+            self.action_group.setEnabled(True)
             self.video_analysis_act.setVisible(True)
-            self.video_analysis_act.setEnabled(True)
             self.video_analysis_act.setChecked(True)
-            self.stacked_widget.setCurrentIndex(4)
+            self.stacked_widget.setCurrentIndex(self.stacked_widget.count()-2)  # set video analysis for default
 
     def try_logout(self):
         response = requests.get(url=f"{self.url}/logout")
@@ -152,6 +168,7 @@ class MainWindow(BasicWindow):
             self.stacked_widget.setCurrentIndex(self.stacked_widget.count()-1)
 
             self.video_analysis_act.setVisible(False)
+            self.privacy_registration_act.setDisabled(True)
             self.app_logout.setDisabled(True)
             self.action_group.setDisabled(True)
 
@@ -181,3 +198,9 @@ if __name__ == "__main__":
     window.show()
 
     app.exec()
+
+
+r"""
+TODO
+1. 개인정보 등록과 로그아웃 하나의 action_group으로
+"""
